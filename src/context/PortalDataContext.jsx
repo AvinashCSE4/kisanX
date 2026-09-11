@@ -18,6 +18,8 @@ import {
 
 import { generate50SeedBookings } from '../data/initialBookings';
 import api from '../services/api';
+import supabaseService from '../services/supabaseService';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
 
 const PortalDataContext = createContext();
 
@@ -138,6 +140,31 @@ export const PortalDataProvider = ({ children }) => {
 
         if (notifsRes?.success && Array.isArray(notifsRes.data)) {
           setNotifications(notifsRes.data);
+        }
+
+        // If Supabase is configured and farmer mobile is set, ensure profile & bank are refreshed from Supabase
+        if (isSupabaseConfigured() && farmerMobile) {
+          const farmerRes = await api.getFarmer(farmerMobile);
+          if (farmerRes?.success && farmerRes.data) {
+            setFarmerProfile({
+              fullName: farmerRes.data.fullName,
+              farmerIdCard: farmerRes.data.farmerIdCard,
+              mobileNumber: farmerRes.data.mobileNumber,
+              village: farmerRes.data.village,
+              taluka: farmerRes.data.taluka,
+              district: farmerRes.data.district,
+              state: farmerRes.data.state,
+              address: farmerRes.data.address,
+              preferredPaymentMode: farmerRes.data.preferredPaymentMode
+            });
+            setBankDetails({
+              accountHolder: farmerRes.data.accountHolder,
+              bankName: farmerRes.data.bankName,
+              accountNumber: farmerRes.data.accountNumber,
+              ifscCode: farmerRes.data.ifscCode,
+              preferredPaymentMode: farmerRes.data.preferredPaymentMode
+            });
+          }
         }
       } catch (err) {
         console.warn('Backend fetch during mount failed, continuing with local data:', err);
@@ -284,7 +311,11 @@ export const PortalDataProvider = ({ children }) => {
     localStorage.removeItem('kisan_profiles_by_mobile');
 
     try {
-      await api.resetDatabase();
+      if (supabaseService.isConfigured()) {
+        await supabaseService.seedDemoData();
+      } else {
+        await api.resetDatabase();
+      }
       const freshRes = await api.getBookings();
       if (freshRes?.success && Array.isArray(freshRes.data)) {
         setBookings(freshRes.data);
@@ -681,6 +712,7 @@ export const PortalDataProvider = ({ children }) => {
         isAdminLoggedIn,
         activePortal,
         isBackendConnected,
+        isSupabaseConnected: isSupabaseConfigured(),
         farmerProfile,
         bankDetails,
         bookings,

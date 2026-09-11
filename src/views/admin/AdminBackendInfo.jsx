@@ -14,20 +14,29 @@ import {
   Table,
   Zap,
   Shield,
-  FileText
+  FileText,
+  Cloud,
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
 import api from '../../services/api';
+import supabaseService from '../../services/supabaseService';
+import { isSupabaseConfigured } from '../../lib/supabaseClient';
 import { usePortalData } from '../../context/PortalDataContext';
 
 export const AdminBackendInfo = ({ onNavigateToFarmerDb, onNavigateToBookingDb }) => {
   const { bookings, resetTo3BookingsPerSession } = usePortalData();
+
+  const isSupabase = supabaseService.isConfigured();
+  const [supabaseSeedLoading, setSupabaseSeedLoading] = useState(false);
+  const [supabaseSeedMsg, setSupabaseSeedMsg] = useState('');
 
   const [healthData, setHealthData] = useState(null);
   const [adminStats, setAdminStats] = useState(null);
   const [liveQueues, setLiveQueues] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastCheckTime, setLastCheckTime] = useState('');
-  const [activeSubTab, setActiveSubTab] = useState('overview'); // 'overview' | 'tables' | 'endpoints' | 'raw'
+  const [activeSubTab, setActiveSubTab] = useState(isSupabase ? 'supabase' : 'overview'); // 'overview' | 'supabase' | 'tables' | 'endpoints' | 'raw'
   const [reseedLoading, setReseedLoading] = useState(false);
   const [reseedSuccess, setReseedSuccess] = useState('');
 
@@ -70,6 +79,21 @@ export const AdminBackendInfo = ({ onNavigateToFarmerDb, onNavigateToBookingDb }
       alert('Error re-seeding: ' + err.message);
     } finally {
       setReseedLoading(false);
+    }
+  };
+
+  const handleSeedSupabase = async () => {
+    if (!window.confirm('Seed or refresh Supabase PostgreSQL with 50 bookings, 50 farmers, 4 centres, and 4 sessions?')) return;
+    setSupabaseSeedLoading(true);
+    setSupabaseSeedMsg('');
+    try {
+      const res = await supabaseService.seedDemoData();
+      setSupabaseSeedMsg(`✅ Successfully seeded ${res.seededBookings} bookings, ${res.seededFarmers} farmers, and ${res.seededCentres} centres into Supabase PostgreSQL!`);
+      await fetchBackendData();
+    } catch (e) {
+      setSupabaseSeedMsg(`❌ Error seeding Supabase: ${e.message}`);
+    } finally {
+      setSupabaseSeedLoading(false);
     }
   };
 
@@ -162,9 +186,9 @@ export const AdminBackendInfo = ({ onNavigateToFarmerDb, onNavigateToBookingDb }
             <Database size={26} />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', letterSpacing: '-0.3px' }}>
-                Backend API & SQLite Database Engine
+                {isSupabase ? 'Supabase Cloud PostgreSQL & REST Data Layer' : 'Backend API & SQLite Database Engine'}
               </h2>
               <span style={{
                 display: 'inline-flex',
@@ -174,22 +198,24 @@ export const AdminBackendInfo = ({ onNavigateToFarmerDb, onNavigateToBookingDb }
                 borderRadius: '20px',
                 fontSize: '11px',
                 fontWeight: '700',
-                backgroundColor: isOnline ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                color: isOnline ? '#4ADE80' : '#F87171',
-                border: `1px solid ${isOnline ? 'rgba(74, 222, 128, 0.4)' : 'rgba(248, 113, 113, 0.4)'}`
+                backgroundColor: isSupabase ? 'rgba(56, 189, 248, 0.2)' : (isOnline ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'),
+                color: isSupabase ? '#38BDF8' : (isOnline ? '#4ADE80' : '#F87171'),
+                border: `1px solid ${isSupabase ? 'rgba(56, 189, 248, 0.4)' : (isOnline ? 'rgba(74, 222, 128, 0.4)' : 'rgba(248, 113, 113, 0.4)')}`
               }}>
                 <span style={{
                   width: '7px',
                   height: '7px',
                   borderRadius: '50%',
-                  backgroundColor: isOnline ? '#4ADE80' : '#F87171',
-                  boxShadow: isOnline ? '0 0 8px #4ADE80' : 'none'
+                  backgroundColor: isSupabase ? '#38BDF8' : (isOnline ? '#4ADE80' : '#F87171'),
+                  boxShadow: (isSupabase || isOnline) ? '0 0 8px currentColor' : 'none'
                 }}></span>
-                {isOnline ? 'LIVE & PERSISTENT' : 'OFFLINE'}
+                {isSupabase ? 'SUPABASE CLOUD POSTGRESQL' : (isOnline ? 'LIVE & PERSISTENT SQLITE' : 'OFFLINE')}
               </span>
             </div>
             <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94A3B8' }}>
-              High-performance Node.js v25 native <code style={{ background: '#334155', color: '#38BDF8', padding: '2px 6px', borderRadius: '4px' }}>node:sqlite</code> database with Express REST API
+              {isSupabase
+                ? 'Production cloud PostgreSQL source of truth with Row Level Security & publishable client API'
+                : 'High-performance Node.js v25 native node:sqlite database with Express REST API'}
             </p>
           </div>
         </div>
@@ -266,36 +292,36 @@ export const AdminBackendInfo = ({ onNavigateToFarmerDb, onNavigateToBookingDb }
         gap: '16px',
         marginBottom: '24px'
       }}>
-        <div className="card" style={{ padding: '16px', borderLeft: '4px solid #0D9488' }}>
+        <div className="card" style={{ padding: '16px', borderLeft: `4px solid ${isSupabase ? '#0284C7' : '#0D9488'}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748B', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase' }}>
             <span>Database Engine</span>
-            <Database size={16} color="#0D9488" />
+            <Database size={16} color={isSupabase ? '#0284C7' : '#0D9488'} />
           </div>
           <div style={{ fontSize: '19px', fontWeight: '800', color: '#0F172A', marginTop: '6px' }}>
-            SQLite 3
+            {isSupabase ? 'Supabase PostgreSQL' : 'SQLite 3'}
           </div>
           <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
-            Driver: <strong>native node:sqlite</strong>
+            {isSupabase ? <span>Source: <strong>Cloud PostgreSQL (RLS)</strong></span> : <span>Driver: <strong>native node:sqlite</strong></span>}
           </div>
-          <div style={{ fontSize: '11px', color: '#059669', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#059669' }}></span>
-            WAL Mode (Write-Ahead Logging)
+          <div style={{ fontSize: '11px', color: isSupabase ? '#0284C7' : '#059669', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSupabase ? '#0284C7' : '#059669' }}></span>
+            {isSupabase ? 'Supabase Client Connected' : 'WAL Mode (Write-Ahead Logging)'}
           </div>
         </div>
 
         <div className="card" style={{ padding: '16px', borderLeft: '4px solid #2563EB' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748B', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase' }}>
-            <span>Server Architecture</span>
+            <span>{isSupabase ? 'Deployment Host' : 'Server Architecture'}</span>
             <Server size={16} color="#2563EB" />
           </div>
           <div style={{ fontSize: '19px', fontWeight: '800', color: '#0F172A', marginTop: '6px' }}>
-            Node.js + Express
+            {isSupabase ? 'Vercel + Supabase' : 'Node.js + Express'}
           </div>
           <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
-            Backend: <strong>Port 5000</strong>
+            {isSupabase ? <span>Live: <strong>kisanx05.vercel.app</strong></span> : <span>Backend: <strong>Port 5000</strong></span>}
           </div>
           <div style={{ fontSize: '11px', color: '#2563EB', marginTop: '6px' }}>
-            Vite Proxy: <code style={{ background: '#EFF6FF', padding: '2px 4px', borderRadius: '3px' }}>/api</code> $\rightarrow$ <code style={{ background: '#EFF6FF', padding: '2px 4px', borderRadius: '3px' }}>:5000</code>
+            {isSupabase ? 'Vite Static SPA + Cloud DB' : 'Vite Proxy: /api -> :5000'}
           </div>
         </div>
 
@@ -337,9 +363,11 @@ export const AdminBackendInfo = ({ onNavigateToFarmerDb, onNavigateToBookingDb }
         display: 'flex',
         gap: '8px',
         borderBottom: '2px solid #E2E8F0',
-        marginBottom: '20px'
+        marginBottom: '20px',
+        overflowX: 'auto'
       }}>
         {[
+          { id: 'supabase', label: '⚡ Supabase PostgreSQL', icon: Shield },
           { id: 'overview', label: 'Venue Load & Architecture', icon: Cpu },
           { id: 'tables', label: 'Database Tables & Records', icon: Table },
           { id: 'endpoints', label: 'REST API Catalog', icon: Code },
@@ -373,6 +401,284 @@ export const AdminBackendInfo = ({ onNavigateToFarmerDb, onNavigateToBookingDb }
           );
         })}
       </div>
+
+      {/* TAB 0: SUPABASE POSTGRESQL & CLOUD INTEGRATION */}
+      {activeSubTab === 'supabase' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Architecture Card */}
+          <div className="card" style={{ padding: '24px', background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)', color: '#FFFFFF', borderRadius: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '10px',
+                  backgroundColor: '#0284C7',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#FFFFFF'
+                }}>
+                  <Cloud size={24} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>
+                    KisanX $\rightarrow$ Supabase PostgreSQL Architecture
+                  </h3>
+                  <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>
+                    Zero-Backend Serverless Architecture Deployed on Vercel
+                  </div>
+                </div>
+              </div>
+
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: '700',
+                backgroundColor: isSupabase ? 'rgba(34, 197, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                color: isSupabase ? '#4ADE80' : '#FBBF24',
+                border: `1px solid ${isSupabase ? 'rgba(74, 222, 128, 0.4)' : 'rgba(251, 191, 36, 0.4)'}`
+              }}>
+                <span style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: isSupabase ? '#4ADE80' : '#FBBF24',
+                  boxShadow: '0 0 8px currentColor'
+                }}></span>
+                {isSupabase ? 'SUPABASE SOURCE OF TRUTH ACTIVE' : 'AWAITING VERCEL / LOCAL ENV VARS'}
+              </span>
+            </div>
+
+            {/* Architecture Flow Box */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '12px',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              padding: '16px',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}>
+              <div style={{ textAlign: 'center', padding: '10px' }}>
+                <div style={{ fontSize: '11px', color: '#38BDF8', fontWeight: '700' }}>FRONTEND CLIENT</div>
+                <div style={{ fontSize: '14px', fontWeight: '800', marginTop: '4px' }}>kisanx05.vercel.app</div>
+                <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '2px' }}>Vite React Single Page App</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38BDF8', fontSize: '20px', fontWeight: '900' }}>
+                $\longrightarrow$
+              </div>
+              <div style={{ textAlign: 'center', padding: '10px' }}>
+                <div style={{ fontSize: '11px', color: '#38BDF8', fontWeight: '700' }}>SUPABASE CLIENT API</div>
+                <div style={{ fontSize: '14px', fontWeight: '800', marginTop: '4px' }}>@supabase/supabase-js</div>
+                <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '2px' }}>Publishable Anon Key (RLS)</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38BDF8', fontSize: '20px', fontWeight: '900' }}>
+                $\longrightarrow$
+              </div>
+              <div style={{ textAlign: 'center', padding: '10px' }}>
+                <div style={{ fontSize: '11px', color: '#4ADE80', fontWeight: '700' }}>CLOUD DATABASE</div>
+                <div style={{ fontSize: '14px', fontWeight: '800', marginTop: '4px' }}>PostgreSQL Database</div>
+                <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '2px' }}>Tables, Views & Realtime</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Seed Feedback Message */}
+          {supabaseSeedMsg && (
+            <div style={{
+              padding: '14px 18px',
+              borderRadius: '10px',
+              fontWeight: '600',
+              fontSize: '13px',
+              backgroundColor: supabaseSeedMsg.startsWith('✅') ? '#ECFDF5' : '#FEF2F2',
+              color: supabaseSeedMsg.startsWith('✅') ? '#065F46' : '#991B1B',
+              border: `1px solid ${supabaseSeedMsg.startsWith('✅') ? '#6EE7B7' : '#FCA5A5'}`
+            }}>
+              {supabaseSeedMsg}
+            </div>
+          )}
+
+          {/* Environment Variables & Action Bar */}
+          <div className="card" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>
+                  🔑 Supabase Environment Variables
+                </h4>
+                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                  Configure these in Vercel Project Settings $\rightarrow$ Environment Variables
+                </div>
+              </div>
+
+              {isSupabase && (
+                <button
+                  type="button"
+                  onClick={handleSeedSupabase}
+                  disabled={supabaseSeedLoading}
+                  style={{
+                    backgroundColor: '#0284C7',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Zap size={15} />
+                  {supabaseSeedLoading ? 'Seeding Supabase...' : 'Seed Demo Dataset to Supabase'}
+                </button>
+              )}
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table className="admin-table" style={{ width: '100%', fontSize: '13px' }}>
+                <thead>
+                  <tr>
+                    <th>Variable Name</th>
+                    <th>Current Value / Status</th>
+                    <th>Required For</th>
+                    <th>Secret Exposure</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code style={{ fontWeight: '700', color: '#0284C7' }}>VITE_SUPABASE_URL</code></td>
+                    <td>
+                      {import.meta.env.VITE_SUPABASE_URL ? (
+                        <span style={{ color: '#059669', fontWeight: '600' }}>
+                          ✓ Configured: <code>{import.meta.env.VITE_SUPABASE_URL}</code>
+                        </span>
+                      ) : (
+                        <span style={{ color: '#D97706', fontWeight: '600' }}>
+                          ⚠️ Not Configured in current environment
+                        </span>
+                      )}
+                    </td>
+                    <td>Connecting frontend client to Supabase cloud instance</td>
+                    <td><span style={{ color: '#059669', fontWeight: '600' }}>Safe (Public URL)</span></td>
+                  </tr>
+                  <tr>
+                    <td><code style={{ fontWeight: '700', color: '#0284C7' }}>VITE_SUPABASE_PUBLISHABLE_KEY</code></td>
+                    <td>
+                      {import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY ? (
+                        <span style={{ color: '#059669', fontWeight: '600' }}>
+                          ✓ Configured (Anon Publishable Key)
+                        </span>
+                      ) : (
+                        <span style={{ color: '#D97706', fontWeight: '600' }}>
+                          ⚠️ Not Configured in current environment
+                        </span>
+                      )}
+                    </td>
+                    <td>Client-side authentication with Row Level Security (RLS)</td>
+                    <td><span style={{ color: '#059669', fontWeight: '600' }}>Safe (Anon / Publishable only)</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 8 Supabase Tables & Views */}
+          <div className="card" style={{ padding: '20px' }}>
+            <h4 style={{ margin: '0 0 14px 0', fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>
+              🗄️ Supabase PostgreSQL Schema (8 Tables & Views)
+            </h4>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="admin-table" style={{ width: '100%', fontSize: '13px' }}>
+                <thead>
+                  <tr>
+                    <th>Table / View</th>
+                    <th>Type</th>
+                    <th>Demo Records</th>
+                    <th>Row Level Security (RLS)</th>
+                    <th>Purpose & Source of Truth</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code style={{ fontWeight: '700', color: '#0D9488' }}>procurement_centres</code></td>
+                    <td>Table</td>
+                    <td><strong>4 Centres</strong></td>
+                    <td><span style={{ color: '#059669', fontWeight: '700' }}>RLS Active (Public Read)</span></td>
+                    <td>APMC Mandi Main, District Hub, KVK, Taluka Mandi</td>
+                  </tr>
+                  <tr>
+                    <td><code style={{ fontWeight: '700', color: '#0D9488' }}>sessions</code></td>
+                    <td>Table</td>
+                    <td><strong>4 Sessions</strong></td>
+                    <td><span style={{ color: '#059669', fontWeight: '700' }}>RLS Active (Public Read)</span></td>
+                    <td>4 Daily 2-hr operational intervals (08 AM - 04 PM)</td>
+                  </tr>
+                  <tr>
+                    <td><code style={{ fontWeight: '700', color: '#2563EB' }}>farmers</code></td>
+                    <td>Table</td>
+                    <td><strong>50 Farmers</strong></td>
+                    <td><span style={{ color: '#059669', fontWeight: '700' }}>RLS Active (Read/Write)</span></td>
+                    <td>15 attributes: Mobile, 11-digit ID, village, KYC, bank details</td>
+                  </tr>
+                  <tr>
+                    <td><code style={{ fontWeight: '700', color: '#7C3AED' }}>bookings</code></td>
+                    <td>Table</td>
+                    <td><strong>50 Bookings</strong></td>
+                    <td><span style={{ color: '#059669', fontWeight: '700' }}>RLS Active (Read/Write)</span></td>
+                    <td>Mandi selling reservations, tokens, weights, DBT vouchers</td>
+                  </tr>
+                  <tr>
+                    <td><code style={{ fontWeight: '700', color: '#EA580C' }}>live_queues</code></td>
+                    <td>Table</td>
+                    <td><strong>4 Queues</strong></td>
+                    <td><span style={{ color: '#059669', fontWeight: '700' }}>RLS Active (Read/Write)</span></td>
+                    <td>Real-time counter token being served per session</td>
+                  </tr>
+                  <tr>
+                    <td><code style={{ fontWeight: '700', color: '#16A34A' }}>notifications</code></td>
+                    <td>Table</td>
+                    <td><strong>Dynamic</strong></td>
+                    <td><span style={{ color: '#059669', fontWeight: '700' }}>RLS Active (Read/Write)</span></td>
+                    <td>SMS / In-app alerts for token arrival and DBT payouts</td>
+                  </tr>
+                  <tr>
+                    <td><code style={{ fontWeight: '700', color: '#D97706' }}>sales_view</code></td>
+                    <td>SQL View</td>
+                    <td><strong>Completed Sales</strong></td>
+                    <td><span style={{ color: '#059669', fontWeight: '700' }}>Filtered View</span></td>
+                    <td>Auto-computed: <code>WHERE status = 'Sale Completed'</code></td>
+                  </tr>
+                  <tr>
+                    <td><code style={{ fontWeight: '700', color: '#0284C7' }}>payments_view</code></td>
+                    <td>SQL View</td>
+                    <td><strong>Settled Payments</strong></td>
+                    <td><span style={{ color: '#059669', fontWeight: '700' }}>Filtered View</span></td>
+                    <td>Auto-computed: <code>WHERE payment_status = 'Paid'</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{
+              marginTop: '16px',
+              padding: '14px',
+              backgroundColor: '#F8FAFC',
+              borderRadius: '8px',
+              border: '1px solid #E2E8F0',
+              fontSize: '12px',
+              color: '#475569'
+            }}>
+              <strong>💡 How to run the SQL Schema:</strong> Open your Supabase project dashboard $\rightarrow$ <strong>SQL Editor</strong> $\rightarrow$ Open file <code>supabase/schema.sql</code> $\rightarrow$ Click <strong>Run</strong>.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: OVERVIEW & VENUE LOAD */}
       {activeSubTab === 'overview' && (

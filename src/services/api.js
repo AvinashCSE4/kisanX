@@ -1,3 +1,5 @@
+import supabaseService from './supabaseService';
+
 const API_BASE = '/api';
 
 /**
@@ -12,8 +14,16 @@ async function handleResponse(res) {
 }
 
 export const api = {
+  isSupabase() {
+    return supabaseService.isConfigured();
+  },
+
   // Health
   async checkHealth() {
+    if (supabaseService.isConfigured()) {
+      const health = await supabaseService.checkHealth();
+      if (health) return health;
+    }
     try {
       const res = await fetch(`${API_BASE}/health`);
       return await handleResponse(res);
@@ -25,6 +35,12 @@ export const api = {
 
   // Bookings
   async getBookings(params = {}) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.getBookings(params);
+      if (data !== null) {
+        return { success: true, data, source: 'Supabase' };
+      }
+    }
     const query = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '') {
@@ -37,11 +53,19 @@ export const api = {
   },
 
   async getBookingBySellingId(sellingId) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.getBookingBySellingId(sellingId);
+      return { success: Boolean(data), data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/bookings/${encodeURIComponent(sellingId)}`);
     return await handleResponse(res);
   },
 
   async createBooking(bookingData) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.createBooking(bookingData);
+      return { success: true, data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/bookings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -51,6 +75,10 @@ export const api = {
   },
 
   async updateBookingStatus(sellingId, status) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.updateBookingStatus(sellingId, status);
+      return { success: true, data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/bookings/${encodeURIComponent(sellingId)}/status`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -60,6 +88,10 @@ export const api = {
   },
 
   async processPayment(sellingId, paymentData) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.processPayment(sellingId, paymentData);
+      return { success: true, data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/bookings/${encodeURIComponent(sellingId)}/payment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -69,6 +101,10 @@ export const api = {
   },
 
   async markMissed(sellingId) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.markMissed(sellingId);
+      return { success: true, data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/bookings/${encodeURIComponent(sellingId)}/missed`, {
       method: 'PUT'
     });
@@ -76,6 +112,10 @@ export const api = {
   },
 
   async rescheduleBooking(sellingId, { newCentreId, newDate, newSessionId }) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.rescheduleBooking(sellingId, { newCentreId, newDate, newSessionId });
+      return { success: true, data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/bookings/${encodeURIComponent(sellingId)}/reschedule`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -86,6 +126,9 @@ export const api = {
 
   // Farmers & OTP Auth
   async sendOtp(mobileNumber) {
+    if (supabaseService.isConfigured()) {
+      return { success: true, message: 'OTP sent successfully (Demo OTP: 123456)' };
+    }
     const res = await fetch(`${API_BASE}/farmers/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -95,6 +138,14 @@ export const api = {
   },
 
   async verifyOtp(mobileNumber, otp, farmerIdCard) {
+    if (supabaseService.isConfigured()) {
+      if (otp === '123456') {
+        const farmerData = await supabaseService.loginFarmer(mobileNumber, farmerIdCard);
+        return { success: true, verified: true, data: farmerData };
+      } else {
+        return { success: false, error: 'Invalid OTP. Enter 123456' };
+      }
+    }
     const res = await fetch(`${API_BASE}/farmers/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -104,6 +155,10 @@ export const api = {
   },
 
   async loginFarmer(mobileNumber, farmerIdCard) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.loginFarmer(mobileNumber, farmerIdCard);
+      return { success: true, data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/farmers/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -113,6 +168,12 @@ export const api = {
   },
 
   async getAllFarmers(params = {}) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.getAllFarmers(params);
+      if (data !== null) {
+        return { success: true, data, source: 'Supabase' };
+      }
+    }
     const query = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '') {
@@ -125,11 +186,19 @@ export const api = {
   },
 
   async getFarmer(mobileNumber) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.getFarmer(mobileNumber);
+      return { success: Boolean(data), data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/farmers/${encodeURIComponent(mobileNumber)}`);
     return await handleResponse(res);
   },
 
   async updateFarmerProfile(mobileNumber, profile) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.updateFarmerProfile(mobileNumber, profile);
+      return { success: true, data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/farmers/${encodeURIComponent(mobileNumber)}/profile`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -139,6 +208,10 @@ export const api = {
   },
 
   async updateBankDetails(mobileNumber, bank) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.updateBankDetails(mobileNumber, bank);
+      return { success: true, data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/farmers/${encodeURIComponent(mobileNumber)}/bank`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -149,11 +222,21 @@ export const api = {
 
   // Queues
   async getLiveQueues() {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.getLiveQueues();
+      if (data !== null) {
+        return { success: true, data, source: 'Supabase' };
+      }
+    }
     const res = await fetch(`${API_BASE}/queues/live`);
     return await handleResponse(res);
   },
 
   async advanceQueue({ queueKey, centreId, date, sessionId }) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.advanceQueue({ queueKey, centreId, date, sessionId });
+      return { success: true, data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/queues/advance`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -164,6 +247,12 @@ export const api = {
 
   // Notifications
   async getNotifications(mobileNumber) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.getNotifications(mobileNumber);
+      if (data !== null) {
+        return { success: true, data, source: 'Supabase' };
+      }
+    }
     const url = mobileNumber
       ? `${API_BASE}/notifications?mobileNumber=${encodeURIComponent(mobileNumber)}`
       : `${API_BASE}/notifications`;
@@ -172,6 +261,10 @@ export const api = {
   },
 
   async markNotificationRead(id) {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.markNotificationRead(id);
+      return { success: true, data, source: 'Supabase' };
+    }
     const res = await fetch(`${API_BASE}/notifications/${encodeURIComponent(id)}/read`, {
       method: 'PUT'
     });
@@ -180,6 +273,12 @@ export const api = {
 
   // Admin
   async getAdminStats() {
+    if (supabaseService.isConfigured()) {
+      const data = await supabaseService.getAdminStats();
+      if (data !== null) {
+        return { success: true, data, source: 'Supabase' };
+      }
+    }
     const res = await fetch(`${API_BASE}/admin/stats`);
     return await handleResponse(res);
   },
