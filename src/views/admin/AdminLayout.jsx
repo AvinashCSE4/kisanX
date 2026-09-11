@@ -24,6 +24,8 @@ import AdminBookingDatabase from './AdminBookingDatabase';
 import AdminFarmerDatabase from './AdminFarmerDatabase';
 import AdminSearchId from './AdminSearchId';
 import AdminBackendInfo from './AdminBackendInfo';
+import AdminProcurementWeighing from './AdminProcurementWeighing';
+import AdminDisbursePayments from './AdminDisbursePayments';
 
 export const AdminLayout = ({ onSwitchToFarmer }) => {
   const { t, language, setLanguage, languages } = useLanguage();
@@ -477,15 +479,21 @@ export const AdminLayout = ({ onSwitchToFarmer }) => {
           )}
 
           {currentTab === 'sales' && (
-            <div>
-              <AdminSearchId initialSellingId={selectedSellingId || ''} />
-            </div>
+            <AdminProcurementWeighing
+              initialSellingId={selectedSellingId}
+              onSelectBooking={handleSelectBooking}
+              onNavigateToPayment={(sellingId) => {
+                setSelectedSellingId(sellingId);
+                setCurrentTab('payments');
+              }}
+            />
           )}
 
           {currentTab === 'payments' && (
-            <div>
-              <AdminSearchId initialSellingId={selectedSellingId || ''} />
-            </div>
+            <AdminDisbursePayments
+              initialSellingId={selectedSellingId}
+              onSelectBooking={handleSelectBooking}
+            />
           )}
 
           {currentTab === 'reports' && (
