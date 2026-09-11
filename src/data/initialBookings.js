@@ -201,3 +201,32 @@ export const generate50SeedBookings = () => {
 };
 
 export const generateNew3BookingsPerSession = generate50SeedBookings;
+
+export const generate50SeedFarmers = () => {
+  const bookings = generate50SeedBookings();
+  const map = new Map();
+  bookings.forEach(b => {
+    if (b.mobileNumber && !map.has(b.mobileNumber)) {
+      map.set(b.mobileNumber, {
+        farmerIdCard: b.farmerIdCard || '10020030040',
+        mobileNumber: b.mobileNumber,
+        farmerName: b.farmerName || 'Registered Farmer',
+        fullName: b.farmerName || 'Registered Farmer',
+        village: b.village || 'Amreli Rural',
+        taluka: b.taluka || 'Amreli',
+        district: b.district || 'Amreli',
+        state: b.state || 'Gujarat',
+        address: `${b.village || 'Amreli'} Main Road, Taluka ${b.taluka || 'Amreli'}`,
+        paymentMode: b.paymentMode || 'Online',
+        preferredPaymentMode: b.paymentMode || 'Online',
+        accountHolder: b.farmerName || 'Registered Farmer',
+        bankName: b.bankName || 'State Bank of India',
+        accountNumber: b.accountNumber || '309820001234',
+        ifscCode: b.ifscCode || 'SBIN0001234',
+        createdAt: b.createdAt || new Date().toISOString(),
+        updatedAt: b.createdAt || new Date().toISOString()
+      });
+    }
+  });
+  return Array.from(map.values());
+};

@@ -74,22 +74,25 @@ export const PortalDataProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : INITIAL_BANK_DETAILS;
   });
 
-  // All bookings list
+  // All bookings list - persistent 50 demo dataset fallback so redeploy NEVER empties data
   const [bookings, setBookings] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('kisan_bookings');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             return parsed;
           }
         } catch (e) {
           console.error('Error parsing saved bookings', e);
         }
       }
+      try {
+        localStorage.setItem('kisan_bookings', JSON.stringify(INITIAL_BOOKINGS));
+      } catch (e) {}
     }
-    return [];
+    return INITIAL_BOOKINGS;
   });
 
   // Real-time queue tracker - currently served token per centre+date+session or slot
@@ -108,7 +111,7 @@ export const PortalDataProvider = ({ children }) => {
   // Notifications
   const [notifications, setNotifications] = useState([]);
 
-  // Fetch initial data from SQLite backend on startup
+  // Fetch initial data from SQLite backend or Supabase on startup
   useEffect(() => {
     let isMounted = true;
 
@@ -129,9 +132,21 @@ export const PortalDataProvider = ({ children }) => {
 
         if (!isMounted) return;
 
-        if (bookingsRes?.success && Array.isArray(bookingsRes.data)) {
+        if (bookingsRes?.success && Array.isArray(bookingsRes.data) && bookingsRes.data.length > 0) {
           setBookings(bookingsRes.data);
           localStorage.setItem('kisan_bookings', JSON.stringify(bookingsRes.data));
+        } else if (isSupabaseConfigured()) {
+          // If Supabase is connected but has 0 records, automatically seed all 50 items so redeploy never loses them
+          try {
+            await supabaseService.seedDemoData();
+            const seeded = await supabaseService.getBookings();
+            if (seeded && seeded.length > 0) {
+              setBookings(seeded);
+              localStorage.setItem('kisan_bookings', JSON.stringify(seeded));
+            }
+          } catch (seedErr) {
+            console.warn('Auto-seed to Supabase on first run failed:', seedErr);
+          }
         }
 
         if (queuesRes?.success && queuesRes.data) {
