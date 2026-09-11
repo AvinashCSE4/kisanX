@@ -598,15 +598,10 @@ export const AdminDisbursePayments = ({ initialSellingId = '', onSelectBooking }
       {/* Razorpay Gateway Modal */}
       {showRazorpayModal && selectedBooking && (
         <RazorpayModal
-          sellingId={selectedBooking.sellingId}
-          farmerName={selectedBooking.farmerName}
-          crop={selectedBooking.crop}
-          finalQuantity={Number(weighedQty)}
-          approvedRate={Number(approvedRate)}
+          booking={selectedBooking}
+          weighedQty={weighedQty}
+          approvedRate={approvedRate}
           totalAmount={currentTotalCalculated}
-          bankName={selectedBooking.bankName || 'State Bank of India'}
-          accountNumber={selectedBooking.accountNumber || '309820010040'}
-          ifscCode={selectedBooking.ifscCode || 'SBIN0001234'}
           onSuccess={handleRazorpaySuccess}
           onClose={() => setShowRazorpayModal(false)}
         />
