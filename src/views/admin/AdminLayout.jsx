@@ -11,7 +11,10 @@ import {
   LogOut,
   Sprout,
   Menu,
-  X
+  X,
+  ChevronDown,
+  ChevronRight,
+  Server
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { usePortalData } from '../../context/PortalDataContext';
@@ -30,16 +33,7 @@ export const AdminLayout = ({ onSwitchToFarmer }) => {
   const [selectedSellingId, setSelectedSellingId] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const menuItems = [
-    { id: 'dashboard', label: t('adminNavDashboard'), icon: LayoutDashboard, color: '#2563EB' },
-    { id: 'farmer-database', label: '👨‍🌾 Farmer Database', icon: Users, color: '#0284C7' },
-    { id: 'booking-database', label: '📋 Booking Database', icon: Calendar, color: '#4F46E5' },
-    { id: 'database', label: 'Database & Backend', icon: Database, color: '#0D9488' },
-    { id: 'search', label: t('adminNavSearch'), icon: Search, color: '#059669' },
-    { id: 'sales', label: t('adminNavSales'), icon: ShoppingBag, color: '#D97706' },
-    { id: 'payments', label: t('adminNavPayments'), icon: CreditCard, color: '#7C3AED' },
-    { id: 'reports', label: t('adminNavReports'), icon: FileBarChart, color: '#E11D48' }
-  ];
+  const [databaseExpanded, setDatabaseExpanded] = useState(true);
 
   const handleSelectBooking = (sellingId) => {
     setSelectedSellingId(sellingId);
@@ -48,6 +42,15 @@ export const AdminLayout = ({ onSwitchToFarmer }) => {
 
   const isFarmerDbActive = currentTab === 'farmer-database' || currentTab === 'farmers';
   const isBookingDbActive = currentTab === 'booking-database' || currentTab === 'bookings';
+  const isBackendDbActive = currentTab === 'database';
+  const isDatabaseGroupActive = isFarmerDbActive || isBookingDbActive || isBackendDbActive;
+
+  const otherMenuItems = [
+    { id: 'search', label: t('adminNavSearch'), icon: Search, color: '#059669' },
+    { id: 'sales', label: t('adminNavSales'), icon: ShoppingBag, color: '#D97706' },
+    { id: 'payments', label: t('adminNavPayments'), icon: CreditCard, color: '#7C3AED' },
+    { id: 'reports', label: t('adminNavReports'), icon: FileBarChart, color: '#E11D48' }
+  ];
 
   return (
     <div className="admin-layout">
@@ -64,11 +67,178 @@ export const AdminLayout = ({ onSwitchToFarmer }) => {
         </div>
 
         <ul className="admin-sidebar-menu">
-          {menuItems.map((item) => {
+          {/* 1. Dashboard Top-level */}
+          <li className="admin-menu-item">
+            <button
+              type="button"
+              className={`admin-menu-link ${currentTab === 'dashboard' ? 'active' : ''}`}
+              onClick={() => {
+                setCurrentTab('dashboard');
+                setMobileMenuOpen(false);
+              }}
+              style={{
+                backgroundColor: currentTab === 'dashboard' ? '#EFF6FF' : 'transparent',
+                borderLeftColor: currentTab === 'dashboard' ? '#2563EB' : 'transparent',
+                color: currentTab === 'dashboard' ? '#2563EB' : '#334155',
+                fontWeight: currentTab === 'dashboard' ? '800' : '600'
+              }}
+            >
+              <LayoutDashboard size={19} color="#2563EB" />
+              <span>{t('adminNavDashboard')}</span>
+            </button>
+          </li>
+
+          {/* 2. Database Parent Category with 3 Subclasses */}
+          <li className="admin-menu-item">
+            <button
+              type="button"
+              className={`admin-menu-link ${isDatabaseGroupActive ? 'active' : ''}`}
+              onClick={() => {
+                setDatabaseExpanded(prev => !prev);
+              }}
+              style={{
+                backgroundColor: isDatabaseGroupActive ? '#F0FDFA' : 'transparent',
+                borderLeftColor: isDatabaseGroupActive ? '#0D9488' : 'transparent',
+                color: isDatabaseGroupActive ? '#0D9488' : '#334155',
+                fontWeight: isDatabaseGroupActive ? '800' : '700',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingRight: '14px'
+              }}
+              title="Toggle Database Subclasses"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Database size={19} color="#0D9488" />
+                <span>Database</span>
+              </div>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '20px',
+                height: '20px',
+                borderRadius: '4px',
+                backgroundColor: isDatabaseGroupActive ? '#CCFBF1' : '#F1F5F9',
+                color: '#0D9488'
+              }}>
+                {databaseExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </span>
+            </button>
+
+            {/* Subclasses List */}
+            {databaseExpanded && (
+              <ul style={{
+                listStyle: 'none',
+                padding: '4px 0 6px 0',
+                margin: '0',
+                backgroundColor: '#F8FAFC',
+                borderLeft: '2.5px solid #0D9488',
+                marginLeft: '24px',
+                marginTop: '3px',
+                marginBottom: '5px',
+                borderRadius: '0 8px 8px 0'
+              }}>
+                {/* Subclass 1: Farmer Database */}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentTab('farmer-database');
+                      setMobileMenuOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '9px',
+                      padding: '8px 12px',
+                      fontSize: '13px',
+                      fontWeight: isFarmerDbActive ? '800' : '600',
+                      color: isFarmerDbActive ? '#0284C7' : '#475569',
+                      backgroundColor: isFarmerDbActive ? '#E0F2FE' : 'transparent',
+                      borderRadius: '6px',
+                      margin: '2px 6px',
+                      width: 'calc(100% - 12px)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Users size={15} color="#0284C7" />
+                    <span>1. Farmer Database</span>
+                  </button>
+                </li>
+
+                {/* Subclass 2: Booking Database */}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentTab('booking-database');
+                      setMobileMenuOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '9px',
+                      padding: '8px 12px',
+                      fontSize: '13px',
+                      fontWeight: isBookingDbActive ? '800' : '600',
+                      color: isBookingDbActive ? '#4F46E5' : '#475569',
+                      backgroundColor: isBookingDbActive ? '#EEF2FF' : 'transparent',
+                      borderRadius: '6px',
+                      margin: '2px 6px',
+                      width: 'calc(100% - 12px)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Calendar size={15} color="#4F46E5" />
+                    <span>2. Booking Database</span>
+                  </button>
+                </li>
+
+                {/* Subclass 3: Backend */}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentTab('database');
+                      setMobileMenuOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '9px',
+                      padding: '8px 12px',
+                      fontSize: '13px',
+                      fontWeight: isBackendDbActive ? '800' : '600',
+                      color: isBackendDbActive ? '#0D9488' : '#475569',
+                      backgroundColor: isBackendDbActive ? '#F0FDFA' : 'transparent',
+                      borderRadius: '6px',
+                      margin: '2px 6px',
+                      width: 'calc(100% - 12px)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Server size={15} color="#0D9488" />
+                    <span>3. Backend</span>
+                  </button>
+                </li>
+              </ul>
+            )}
+          </li>
+
+          {/* 3. Remaining Standard Navigation Items */}
+          {otherMenuItems.map((item) => {
             const IconComponent = item.icon;
-            const isActive = currentTab === item.id ||
-              (item.id === 'farmer-database' && currentTab === 'farmers') ||
-              (item.id === 'booking-database' && currentTab === 'bookings');
+            const isActive = currentTab === item.id;
 
             return (
               <li key={item.id} className="admin-menu-item">
@@ -198,6 +368,32 @@ export const AdminLayout = ({ onSwitchToFarmer }) => {
               >
                 <span>📋</span>
                 <span>Booking Database</span>
+              </button>
+
+              {/* Button 3: Backend */}
+              <button
+                type="button"
+                id="btn-backend-database"
+                onClick={() => setCurrentTab('database')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 13px',
+                  borderRadius: '7px',
+                  fontSize: '12.5px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  border: isBackendDbActive ? '1px solid #0D9488' : '1px solid transparent',
+                  backgroundColor: isBackendDbActive ? '#0D9488' : 'transparent',
+                  color: isBackendDbActive ? '#FFFFFF' : '#334155',
+                  boxShadow: isBackendDbActive ? '0 2px 6px rgba(13, 148, 136, 0.35)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+                title="Open Backend & Database Engine"
+              >
+                <span>⚙️</span>
+                <span>Backend</span>
               </button>
             </div>
 
